@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DocuChain - Document Notary dApp</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1f2e, #252d40);
+      border-bottom: 1px solid #2d3748;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 28px; }
+    .logo h1 { font-size: 22px; font-weight: 700; color: #63b3ed; }
+    .logo span { font-size: 12px; color: #718096; display: block; }
+
+    #connectBtn {
+      background: linear-gradient(135deg, #4299e1, #3182ce);
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    #connectBtn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(66,153,225,0.4); }
+
+    .wallet-info {
+      font-size: 13px;
+      color: #68d391;
+      background: rgba(72,187,120,0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(72,187,120,0.3);
+    }
+
+    main { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .hero h2 { font-size: 32px; font-weight: 700; color: #e2e8f0; margin-bottom: 10px; }
+    .hero p { color: #718096; font-size: 16px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .stat-card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card .value { font-size: 28px; font-weight: 700; color: #63b3ed; }
+    .stat-card .label { font-size: 13px; color: #718096; margin-top: 4px; }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #1a1f2e;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+      border: 1px solid #2d3748;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      background: transparent;
+      color: #718096;
+      transition: all 0.2s;
+    }
+    .tab.active { background: #2d3748; color: #63b3ed; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 16px;
+      padding: 28px;
+    }
+
+    .card h3 { font-size: 18px; margin-bottom: 6px; color: #e2e8f0; }
+    .card .sub { color: #718096; font-size: 14px; margin-bottom: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 13px; color: #a0aec0; margin-bottom: 6px; font-weight: 500; }
+
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, input[type="file"]:focus {
+      border-color: #4299e1;
+    }
+
+    .file-drop {
+      border: 2px dashed #2d3748;
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .file-drop:hover, .file-drop.dragover {
+      border-color: #4299e1;
+      background: rgba(66,153,225,0.05);
+    }
+    .file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .file-drop .icon { font-size: 36px; margin-bottom: 8px; }
+    .file-drop p { color: #718096; font-size: 14px; }
+    .file-drop .filename { color: #63b3ed; font-weight: 600; margin-top: 8px; font-size: 13px; }
+
+    .hash-display {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #63b3ed;
+      word-break: break-all;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #4299e1, #3182ce);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(66,153,225,0.4); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-verify {
+      background: linear-gradient(135deg, #9f7aea, #805ad5);
+    }
+    .btn-verify:hover { box-shadow: 0 4px 20px rgba(159,122,234,0.4); }
+
+    .result-box {
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 12px;
+      display: none;
+    }
+    .result-box.success { background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.3); }
+    .result-box.error   { background: rgba(245,101,101,0.1); border: 1px solid rgba(245,101,101,0.3); }
+    .result-box.info    { background: rgba(66,153,225,0.1); border: 1px solid rgba(66,153,225,0.3); }
+
+    .result-title { font-weight: 700; font-size: 16px; margin-bottom: 10px; }
+    .result-box.success .result-title { color: #68d391; }
+    .result-box.error   .result-title { color: #fc8181; }
+    .result-box.info    .result-title { color: #63b3ed; }
+
+    .result-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+    .result-row .rkey { color: #718096; }
+    .result-row .rval { color: #e2e8f0; font-family: monospace; font-size: 12px; max-width: 60%; word-break: break-all; text-align: right; }
+
+    .tx-log {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #a0aec0;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 16px;
+      display: none;
+    }
+    .tx-log .log-line { margin-bottom: 4px; }
+    .tx-log .log-line.green { color: #68d391; }
+    .tx-log .log-line.blue  { color: #63b3ed; }
+    .tx-log .log-line.yellow{ color: #f6e05e; }
+    .tx-log .log-line.error { color: #fc8181; }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #4a5568;
+      font-size: 13px;
+      border-top: 1px solid #1a1f2e;
+      margin-top: 60px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔏</div>
+    <div>
+      <h1>DocuChain</h1>
+      <span>Decentralized Document Notary</span>
+    </div>
+  </div>
+  <div id="walletArea">
+    <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <h2>Prove Your Documents Exist</h2>
+    <p>Immutably timestamp any document on Ethereum - without revealing its contents.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="value" id="statCount">-</div>
+      <div class="label">Documents Notarized</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="statNetwork">-</div>
+      <div class="label">Network</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="statBlock">-</div>
+      <div class="label">Current Block</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('notarize', this)">📄 Notarize</button>
+    <button class="tab" onclick="switchTab('verify', this)">🔍 Verify</button>
+    <button class="tab" onclick="switchTab('history', this)">📋 My Documents</button>
+  </div>
+
+  <div id="panel-notarize" class="panel active">
+    <div class="card">
+      <h3>Notarize a Document</h3>
+      <p class="sub">Upload your file to compute its SHA-256 hash, then store that hash on-chain as proof of existence.</p>
+
+      <div class="form-group">
+        <label>Contract Address</label>
+        <input type="text" id="contractInput" value="0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0" />
+      </div>
+
+      <div class="form-group">
+        <label>Select Document</label>
+        <div class="file-drop" id="fileDrop">
+          <input type="file" id="fileInput" onchange="handleFile(this)"/>
+          <div class="icon">📁</div>
+          <p>Drag & drop or click to select a file</p>
+          <p id="fileName" class="filename"></p>
+        </div>
+        <div class="hash-display" id="hashDisplay"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Description (optional)</label>
+        <input type="text" id="descInput" placeholder="e.g. Thesis Draft v1, Contract 2026-05-13..."/>
+      </div>
+
+      <button class="btn-primary" id="notarizeBtn" onclick="notarize()" disabled>
+        🔏 Notarize Document
+      </button>
+
+      <div class="result-box" id="notarizeResult"></div>
+      <div class="tx-log" id="notarizeLogs"></div>
+    </div>
+  </div>
+
+  <div id="panel-verify" class="panel">
+    <div class="card">
+      <h3>Verify a Document</h3>
+      <p class="sub">Upload the original file to recompute its hash, or paste a hash directly, to check if it was ever notarized.</p>
+
+      <div class="form-group">
+        <label>Upload File to Verify</label>
+        <div class="file-drop">
+          <input type="file" id="verifyFile" onchange="handleVerifyFile(this)"/>
+          <div class="icon">🔍</div>
+          <p>Drop file here to compute hash</p>
+          <p id="verifyFileName" class="filename"></p>
+        </div>
+        <div class="hash-display" id="verifyHashDisplay"></div>
+      </div>
+
+      <div class="form-group">
+        <label>- or paste a document hash manually -</label>
+        <input type="text" id="verifyHashInput" placeholder="0x..."/>
+      </div>
+
+      <button class="btn-primary btn-verify" onclick="verify()">
+        🔍 Verify Document
+      </button>
+
+      <div class="result-box" id="verifyResult"></div>
+    </div>
+  </div>
+
+  <div id="panel-history" class="panel">
+    <div class="card">
+      <h3>My Notarized Documents</h3>
+      <p class="sub">All document hashes you have submitted from the connected wallet.</p>
+      <div id="historyList"><p style="color:#718096;text-align:center;padding:30px">Connect your wallet to view your documents.</p></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  DocumentNotary Smart Contract · Assignment F4 · Ethereum dApp · Built with ethers.js v6
+</footer>
+
+<script>
+const ABI = [
+  "function notarizeDocument(bytes32 _docHash, string calldata _description) external",
+  "function verifyDocument(bytes32 _docHash) external returns (bool, address, uint256, string)",
+  "function getDocumentsByOwner(address _owner) external view returns (bytes32[])",
+  "function getDocumentInfo(bytes32 _docHash) external view returns (address, uint256, string, bool)",
+  "function documentCount() external view returns (uint256)",
+  "event DocumentNotarized(bytes32 indexed docHash, address indexed submitter, uint256 timestamp, string description)",
+  "event DocumentVerified(bytes32 indexed docHash, bool exists, address indexed queriedBy)"
+];
+
+let provider, signer, contract;
+let currentHash = null;
+
+function getContractAddress() {
+  return document.getElementById("contractInput").value.trim();
+}
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("MetaMask not found. Please install it.");
+    return;
+  }
+  try {
+    const address = getContractAddress();
+    if (!ethers.isAddress(address)) {
+      alert("Please enter a valid contract address first.");
+      return;
+    }
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    contract = new ethers.Contract(address, ABI, signer);
+
+    const addr = await signer.getAddress();
+    const short = addr.slice(0, 6) + "..." + addr.slice(-4);
+    const network = await provider.getNetwork();
+
+    document.getElementById("connectBtn").style.display = "none";
+    document.getElementById("walletArea").innerHTML = `<div class="wallet-info">✅ ${short}</div>`;
+
+    document.getElementById("statNetwork").textContent = network.name || "Local";
+    await refreshStats();
+    await loadHistory();
+  } catch (e) {
+    log("notarizeLogs", "❌ Connection failed: " + (e.shortMessage || e.message), "error");
+  }
+}
+
+async function refreshStats() {
+  try {
+    if (!contract || !provider) return;
+    const count = await contract.documentCount();
+    const block = await provider.getBlockNumber();
+    document.getElementById("statCount").textContent = count.toString();
+    document.getElementById("statBlock").textContent = "#" + block;
+  } catch {}
+}
+
+async function hashFile(file) {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return "0x" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById("fileName").textContent = "📄 " + file.name;
+  const hash = await hashFile(file);
+  currentHash = hash;
+  const d = document.getElementById("hashDisplay");
+  d.style.display = "block";
+  d.textContent = "SHA-256: " + hash;
+  document.getElementById("notarizeBtn").disabled = false;
+}
+
+async function handleVerifyFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById("verifyFileName").textContent = "📄 " + file.name;
+  const hash = await hashFile(file);
+  const d = document.getElementById("verifyHashDisplay");
+  d.style.display = "block";
+  d.textContent = "SHA-256: " + hash;
+  document.getElementById("verifyHashInput").value = hash;
+}
+
+async function notarize() {
+  if (!signer || !contract) {
+    alert("Please connect your wallet first.");
+    return;
+  }
+  if (!currentHash) {
+    alert("Please select a file first.");
+    return;
+  }
+
+  const desc = document.getElementById("descInput").value.trim() || "No description";
+  const logsEl = document.getElementById("notarizeLogs");
+  const resultEl = document.getElementById("notarizeResult");
+  logsEl.style.display = "block";
+  logsEl.innerHTML = "";
+  resultEl.style.display = "none";
+
+  const btn = document.getElementById("notarizeBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Sending transaction...';
+
+  try {
+    addLog(logsEl, `[INFO] Document hash: ${currentHash}`, "blue");
+    addLog(logsEl, `[INFO] Description: ${desc}`, "blue");
+    addLog(logsEl, "[INFO] Submitting transaction to blockchain...", "yellow");
+
+    const tx = await contract.notarizeDocument(currentHash, desc);
+    addLog(logsEl, `[TX]   Hash: ${tx.hash}`, "green");
+    addLog(logsEl, "[INFO] Waiting for confirmation...", "yellow");
+
+    const receipt = await tx.wait();
+    addLog(logsEl, `[OK]   Confirmed in block #${receipt.blockNumber}`, "green");
+    addLog(logsEl, `[GAS]  Used: ${receipt.gasUsed.toString()} gas`, "blue");
+
+    resultEl.className = "result-box success";
+    resultEl.style.display = "block";
+    resultEl.innerHTML = `
+      <div class="result-title">✅ Document Successfully Notarized!</div>
+      <div class="result-row"><span class="rkey">Transaction Hash</span><span class="rval">${tx.hash}</span></div>
+      <div class="result-row"><span class="rkey">Block Number</span><span class="rval">${receipt.blockNumber}</span></div>
+      <div class="result-row"><span class="rkey">Gas Used</span><span class="rval">${receipt.gasUsed.toString()}</span></div>
+      <div class="result-row"><span class="rkey">Document Hash</span><span class="rval">${currentHash}</span></div>
+      <div class="result-row"><span class="rkey">Timestamp</span><span class="rval">${new Date().toLocaleString()}</span></div>
+    `;
+
+    await refreshStats();
+    await loadHistory();
+  } catch (e) {
+    addLog(logsEl, `[ERR]  ${e.reason || e.shortMessage || e.message}`, "error");
+    resultEl.className = "result-box error";
+    resultEl.style.display = "block";
+    resultEl.innerHTML = `<div class="result-title">❌ Transaction Failed</div><div style="color:#fc8181;font-size:13px">${e.reason || e.shortMessage || e.message}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = "🔏 Notarize Document";
+}
+
+async function verify() {
+  if (!signer || !contract) {
+    alert("Please connect your wallet first.");
+    return;
+  }
+  const hash = document.getElementById("verifyHashInput").value.trim();
+  if (!hash) {
+    alert("Please provide a document hash.");
+    return;
+  }
+
+  const resultEl = document.getElementById("verifyResult");
+  resultEl.style.display = "none";
+
+  try {
+    const [owner, ts, desc, exists] = await contract.getDocumentInfo(hash);
+    if (exists) {
+      const date = new Date(Number(ts) * 1000).toLocaleString();
+      resultEl.className = "result-box success";
+      resultEl.innerHTML = `
+        <div class="result-title">✅ Document Found on Blockchain!</div>
+        <div class="result-row"><span class="rkey">Owner</span><span class="rval">${owner}</span></div>
+        <div class="result-row"><span class="rkey">Notarized At</span><span class="rval">${date}</span></div>
+        <div class="result-row"><span class="rkey">Description</span><span class="rval">${desc}</span></div>
+        <div class="result-row"><span class="rkey">Hash</span><span class="rval">${hash}</span></div>
+      `;
+    } else {
+      resultEl.className = "result-box error";
+      resultEl.innerHTML = `
+        <div class="result-title">❌ Document Not Found</div>
+        <div style="color:#a0aec0;font-size:13px">This document hash has never been notarized on this contract.</div>
+      `;
+    }
+    resultEl.style.display = "block";
+  } catch (e) {
+    resultEl.className = "result-box error";
+    resultEl.style.display = "block";
+    resultEl.innerHTML = `<div class="result-title">❌ Error</div><div style="color:#fc8181;font-size:13px">${e.shortMessage || e.message}</div>`;
+  }
+}
+
+async function loadHistory() {
+  if (!signer || !contract) return;
+  const addr = await signer.getAddress();
+  const hashes = await contract.getDocumentsByOwner(addr);
+  const el = document.getElementById("historyList");
+
+  if (hashes.length === 0) {
+    el.innerHTML = '<p style="color:#718096;text-align:center;padding:30px">No documents notarized yet.</p>';
+    return;
+  }
+
+  let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  for (const h of hashes) {
+    const [, ts, desc] = await contract.getDocumentInfo(h);
+    const date = new Date(Number(ts) * 1000).toLocaleString();
+    html += `
+      <div style="background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:14px;">
+        <div style="font-size:13px;color:#63b3ed;font-family:monospace;word-break:break-all;">${h}</div>
+        <div style="font-size:12px;color:#718096;margin-top:6px;">📅 ${date} &nbsp;|&nbsp; 📝 ${desc}</div>
+      </div>`;
+  }
+  html += "</div>";
+  el.innerHTML = html;
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+  document.getElementById("panel-" + name).classList.add("active");
+  btn.classList.add("active");
+}
+
+function addLog(el, msg, type) {
+  const line = document.createElement("div");
+  line.className = "log-line " + (type || "");
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function log(elId, msg, type) {
+  const el = document.getElementById(elId);
+  if (el) {
+    el.style.display = "block";
+    addLog(el, msg, type || "blue");
+  }
+}
+
+const drop = document.getElementById("fileDrop");
+drop.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  drop.classList.add("dragover");
+});
+drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault();
+  drop.classList.remove("dragover");
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    document.getElementById("fileInput").files = e.dataTransfer.files;
+    handleFile({ files: e.dataTransfer.files });
+  }
+});
+</script>
+</body>
+</html>

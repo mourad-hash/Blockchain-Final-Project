@@ -1,0 +1,59 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f4f7fb;
+  color: #1f2937;
+}
+
+main {
+  max-width: 820px;
+  margin: 32px auto;
+  padding: 0 16px 24px;
+}
+
+h1 {
+  margin-bottom: 8px;
+}
+
+.note {
+  color: #4b5563;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #dbe2ea;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+label {
+  display: block;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+}
+
+button {
+  padding: 8px 12px;
+  margin: 8px 8px 8px 0;
+  cursor: pointer;
+}
+
+pre {
+  white-space: pre-wrap;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  border-radius: 8px;
+}

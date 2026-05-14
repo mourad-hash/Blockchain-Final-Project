@@ -1,0 +1,22 @@
+{
+  "name": "blockchain-final-project",
+  "version": "1.0.0",
+  "description": "Project F4 - Document Timestamping Notary dApp",
+  "main": "hardhat.config.js",
+  "scripts": {
+    "node": "hardhat node",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "hh2",
+    "hardhat": "^2.26.0"
+  },
+  "dependencies": {
+    "docx": "^9.6.1"
+  }
+}
